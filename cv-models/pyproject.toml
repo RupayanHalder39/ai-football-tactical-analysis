@@ -1,0 +1,12 @@
+[project]
+name = "cv-models"
+version = "0.1.0"
+description = "Reusable computer vision research library for football analytics."
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+# Add research-time dependencies here as needed.
+
+[tool.setuptools]
+# Minimal configuration for editable installs if needed later.
+
