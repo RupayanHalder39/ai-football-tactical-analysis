@@ -34,7 +34,9 @@ async def analyze_video(background_tasks: BackgroundTasks, file: UploadFile = Fi
         """Background task wrapper to process video and update job state."""
         try:
             update_job_status(job_id, "processing")
-            result = process_video(video_path_).dict()
+            result = process_video(video_path_, match_id=job_id)
+            if hasattr(result, "dict"):
+                result = result.dict()
             result_path = save_result(job_id, result)
             update_job_status(job_id, "completed", result_path=result_path)
         except Exception:

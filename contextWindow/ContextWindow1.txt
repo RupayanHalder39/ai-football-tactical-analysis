@@ -1,0 +1,162 @@
+# Project Context Window
+Project: /Users/rupayan/ai-football-tactical-analysis
+Date: 2026-03-11
+
+## 1) High-Level Architecture
+- Backend: FastAPI in /Users/rupayan/ai-football-tactical-analysis/backend-fastapi
+- CV library: /Users/rupayan/ai-football-tactical-analysis/cv-models
+- Frontend: React + Vite + Tailwind in /Users/rupayan/ai-football-tactical-analysis/frontend
+- Results directory: /Users/rupayan/ai-football-tactical-analysis/results
+
+## 2) Frontend Structure (React + Vite + Tailwind)
+Location: /Users/rupayan/ai-football-tactical-analysis/frontend
+Key files:
+- package.json
+- vite.config.ts
+- tailwind.config.ts
+- postcss.config.mjs
+- tsconfig.json
+- index.html
+- src/
+  - main.tsx
+  - styles/index.css
+  - app/
+    - App.tsx
+    - routes.tsx
+    - data/
+      - api.ts (API client)
+      - adapters.ts (backend → UI mapping)
+      - types.ts (TypeScript types)
+    - components/
+      - Layout.tsx
+      - Sidebar.tsx
+      - Card.tsx
+      - VideoUpload.tsx
+      - VideoPlayer.tsx
+      - JobStatusPanel.tsx
+      - VideoAnalysisSidebar.tsx
+      - EventTimelinePanel.tsx
+      - PossessionChart.tsx
+      - PossessionTimeline.tsx
+      - PlayerHeatmap.tsx
+    - pages/
+      - PlayerScoutingTool.tsx
+      - TacticalAnalysisTool.tsx
+      - Settings.tsx
+
+## 3) Frontend → Backend API Mapping
+API base in frontend/src/app/data/api.ts:
+- API base: VITE_API_BASE_URL || http://localhost:8000
+
+Endpoints used:
+- POST /analyze-video → createJob(file)
+- GET /job-status/{job_id} → getJobStatus
+- GET /job-result/{job_id} → getJobResult
+- GET /events → getEvents (still exists but frontend now prefers job-result)
+- GET /possession → getPossession (still exists but frontend now prefers job-result)
+- GET /possession-timeline → getPossessionTimeline (still exists but frontend now prefers job-result)
+
+Adapters (frontend/src/app/data/adapters.ts):
+- adaptEvents: ApiEvent[] → UIEvent[]
+- adaptPossessionSummary: {team: %} → array for charts
+- adaptPossessionSegments: clock strings → seconds
+- buildPlayerAnalytics: frames → player heatmap list
+
+## 4) Frontend Interactivity (Job-Result Driven)
+PlayerScoutingTool:
+- Upload → POST /analyze-video → job_id
+- Poll GET /job-status/{job_id}
+- On completion: GET /job-result/{job_id}
+- Uses job-result for:
+  - events overlays
+  - event timeline
+  - possession summary + timeline
+  - player heatmap
+- Stores lastJobId in localStorage
+
+TacticalAnalysisTool:
+- Match selector (default: latest from localStorage)
+- Fetches job-result with match_id (query param)
+- Uses job-result for events, possession, segments, and players
+
+## 5) Backend FastAPI Endpoints
+Location: /Users/rupayan/ai-football-tactical-analysis/backend-fastapi
+- POST /analyze-video (async job creation)
+- GET /job-status/{job_id}
+- GET /job-result/{job_id}
+- GET /events
+- GET /possession
+- GET /possession-timeline
+
+CORS Middleware (backend-fastapi/app/main.py):
+- ALLOWED_ORIGINS env var
+- Default: http://localhost:5173
+- allow_methods: ["*"]
+- allow_headers: ["*"]
+- allow_credentials: true
+
+Results directory resolution in backend events API:
+- EVENT_RESULTS_DIR env var
+- project-root/results
+- backend-fastapi/results
+- cwd/results
+
+## 6) Updated Backend Pipeline (Dynamic Job Results)
+File: backend-fastapi/app/pipelines/video_pipeline.py
+- Loads cv-models dynamically (cv_models)
+- Runs VideoProcessor on uploaded video
+- Runs EventEngine on frames
+- Attaches player speed/distance from TacticalAnalyzer
+- Enriches events with x/y from ball position
+- Returns:
+  - match_metadata
+  - events
+  - possession_summary
+  - possession_segments
+  - frames
+
+## 7) CV Library Summary
+Location: /Users/rupayan/ai-football-tactical-analysis/cv-models
+- PlayerDetector (YOLOv8)
+- BallDetector (YOLOv8 sports ball)
+- PlayerTracker (ByteTrack)
+- PitchKeypointDetector (placeholder)
+- PitchHomography (homography transform)
+- PitchMapper (pixel → pitch coordinates)
+- TacticalAnalyzer (speed, distance, team centroid)
+- EventEngine (temporal heuristic events + possession)
+- VideoProcessor (frame loop, JSONL streaming)
+
+## 8) EventEngine Output
+Returns:
+- events: [{timestamp, timestamp_seconds, event, team, player, confidence, x, y, outcome}]
+- possession_summary: {Team_A: %, Team_B: %}
+- possession_segments: [{team, start, end}]
+
+## 9) Data Flow Summary (Current)
+Upload → job created → poll status → job-result (dynamic) →
+- overlays (VideoPlayer)
+- event timeline (EventTimelinePanel)
+- possession charts (PossessionChart, PossessionTimeline)
+- player heatmap (PlayerHeatmap)
+
+## 10) Environment / Dependencies
+Frontend:
+- Vite + React + Tailwind
+- lucide-react, recharts
+
+Backend:
+- FastAPI + Starlette CORS
+- cv-models dependencies:
+  - opencv-python
+  - ultralytics
+  - supervision
+  - numpy
+  - pandas
+  - scikit-learn
+
+## 11) Notes / Pending Improvements
+- Backend currently computes job-result dynamically; ensure runtime has cv dependencies installed.
+- EventEngine heuristics are basic; can be improved with pitch coordinates.
+- Match selector passes match_id query but backend job-result currently ignores match_id. Future enhancement: support match-based lookup.
+
