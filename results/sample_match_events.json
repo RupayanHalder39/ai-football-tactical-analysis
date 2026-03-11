@@ -1,0 +1,38 @@
+{
+  "events": [
+    {
+      "timestamp": "00:05",
+      "timestamp_seconds": 5.0,
+      "event": "pass",
+      "confidence": 0.8
+    },
+    {
+      "timestamp": "00:10",
+      "timestamp_seconds": 10.0,
+      "event": "dribble",
+      "confidence": 0.8
+    },
+    {
+      "timestamp": "00:15",
+      "timestamp_seconds": 15.0,
+      "event": "shot",
+      "confidence": 0.8
+    }
+  ],
+  "possession_summary": {
+    "Team_A": 50.0,
+    "Team_B": 50.0
+  },
+  "possession_segments": [
+    {
+      "team": "Team_A",
+      "start": "00:00",
+      "end": "00:15"
+    },
+    {
+      "team": "Team_B",
+      "start": "00:15",
+      "end": "00:29"
+    }
+  ]
+}
